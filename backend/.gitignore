@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+
+# Environment variables
+.env
+
+# Frontend build output (di-generate saat deploy)
+# public/
+
+# Uploads (file yang diupload user, jangan ikut ke repo)
+uploads/*/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
