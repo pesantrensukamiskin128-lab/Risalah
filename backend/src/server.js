@@ -78,6 +78,36 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Endpoint debug DB — hapus setelah masalah teratasi
+app.get('/api/setup/db-check', async (req, res) => {
+  const secret = req.query.secret;
+  if (!process.env.SETUP_SECRET || secret !== process.env.SETUP_SECRET) {
+    return res.status(403).json({ success: false, message: 'Akses ditolak' });
+  }
+  const prisma = require('./config/prisma');
+  try {
+    // Test query sederhana
+    const result = await prisma.$queryRaw`SELECT 1 as ping`;
+    const tables = await prisma.$queryRaw`SHOW TABLES`;
+    const userCount = await prisma.user.count();
+    const orgCount  = await prisma.organisasiProfil.count();
+    res.json({
+      success: true,
+      ping: result,
+      tables: tables.map(t => Object.values(t)[0]),
+      userCount,
+      orgCount,
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: err.message,
+      code: err.code,
+      meta: err.meta,
+    });
+  }
+});
+
 // Endpoint debug path logo — hapus setelah masalah teratasi
 app.get('/api/setup/logo-check', async (req, res) => {
   const secret = req.query.secret;
