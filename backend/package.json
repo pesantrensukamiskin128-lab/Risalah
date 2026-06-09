@@ -1,7 +1,7 @@
 {
-  "name": "risalat",
+  "name": "risalatin",
   "version": "1.0.0",
-  "description": "RISALAT - Repositori Informasi Surat dan Administrasi Pesantren",
+  "description": "RISALATIN - Repositori Informasi Surat dan Administrasi Pesantren Sukamiskin",
   "main": "src/server.js",
   "engines": {
     "node": ">=18.0.0"

@@ -72,7 +72,7 @@ app.use('/api/template-surat', require('./routes/template.routes'));
 app.get('/api/health', (req, res) => {
   res.json({
     success: true,
-    message: 'RISALAT berjalan dengan baik',
+    message: 'RISALATIN berjalan dengan baik',
     version: '1.0.0',
     timestamp: new Date().toISOString()
   });
@@ -216,14 +216,14 @@ const PORT = process.env.PORT || 5000;
 if (require.main === module) {
   autoMigrate().then(() => {
     app.listen(PORT, () => {
-      console.log(`🚀 RISALAT berjalan di port ${PORT}`);
+      console.log(`🚀 RISALATIN berjalan di port ${PORT}`);
       console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
-      console.log(`🌐 App URL: https://risalat.masyppsukamiskin.sch.id`);
+      console.log(`🌐 App URL: https://risalatin.sukamiskin.ponpes.id`);
     });
   });
 } else {
   app.listen(PORT, () => {
-    console.log(`🚀 RISALAT berjalan di port ${PORT}`);
+    console.log(`🚀 RISALATIN berjalan di port ${PORT}`);
   });
 }
 

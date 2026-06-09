@@ -27,7 +27,7 @@ const useAuthStore = create(
       getToken: () => get().token,
     }),
     {
-      name: 'risalat-auth',
+      name: 'risalatin-auth',
       partialize: (state) => ({
         user: state.user,
         token: state.token,

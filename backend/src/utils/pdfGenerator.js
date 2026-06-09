@@ -680,7 +680,7 @@ function renderTable(doc, table, x, startY) {
   if (!allRows.length) return startY;
   const numCols = Math.max(...allRows.map(r => r.length));
   if (!numCols) return startY;
-  const PADX = 4, PADY = 2;
+  const PADX = 2, PADY = 2;
 
   // ── Hitung lebar kolom berdasarkan lebar teks aktual ──────────────────────
   // Set font dulu sebelum mengukur agar widthOfString akurat
@@ -969,13 +969,13 @@ async function drawKopSurat(doc, organisasi, pageY) {
   const lineY = Math.max(y + 4, (pageY !== undefined ? pageY : MT) + logoMaxSize + 4);
   doc.moveTo(ML, lineY).lineTo(ML + CW, lineY).lineWidth(2.5).strokeColor(GREEN).stroke();
 
-  return lineY + 4;
+  return lineY + 2;
 }
 
 // ── IDENTITAS SURAT ─────────────────────────────────────────────────────────[...]
 // Untuk layout rutin (A/B): hanya Nomor, Lampiran, Perihal — tanggal dipindah ke bawah isi surat
 function drawIdentitasSurat(doc, surat, startY) {
-  let y = startY + 4;
+  let y = startY + 2;
   const labelX = ML;
   const colonX = ML + 100;
   const valueX = colonX + 8;
@@ -995,7 +995,7 @@ function drawIdentitasSurat(doc, surat, startY) {
     y = doc.y + 1;
   }
 
-  return y + 8;
+  return y + 4;
 }
 
 // ── TUJUAN SURAT ──────────────────────────────────────────────────────────[...]
@@ -1024,7 +1024,7 @@ function drawTujuan(doc, surat, startY) {
   y = doc.y + 1;
   doc.font(F_REG).fontSize(FS_ISI).fillColor('#000000')
      .text('        Tempat', ML, y, { width: CW });
-  y = doc.y + 8;
+  y = doc.y + 4;
   return y;
 }
 
@@ -1082,7 +1082,7 @@ function renderBlock(doc, block, y) {
           fit: [maxW, maxH],
           align: 'left',
         });
-        return doc.y + 6;
+        return doc.y + 4;
       }
     } catch (_) {}
     return y + 4;
@@ -1141,13 +1141,13 @@ async function drawTandaTangan(doc, surat, startY, qrDataUrl) {
 
   const kepala = surat.kepala;
 
-  let y = startY + 4;
+  let y = startY + 2;
 
   // Jabatan Kepala
   const jabatanKepala = kepala?.jabatan || 'Kepala Madrasah';
   doc.font(F_REG).fontSize(FS_ISI).fillColor('#000000')
      .text(jabatanKepala + ',', blokX, y, { width: blokW, align: 'left' });
-  y = doc.y + 4;
+  y = doc.y + 2;
 
   // QR code
   if (qrDataUrl) {
@@ -1157,7 +1157,7 @@ async function drawTandaTangan(doc, surat, startY, qrDataUrl) {
       const verifikasiUrl = `${getFrontendUrl()}/verifikasi/${surat.qrCodeToken}`;
       doc.link(blokX, y, qrSz, qrSz, verifikasiUrl);
     } catch (_) {}
-    y += qrSz + 4;
+    y += qrSz + 2;
   } else {
     y += gapTtd;
   }
@@ -1175,7 +1175,7 @@ async function drawTandaTangan(doc, surat, startY, qrDataUrl) {
     }
   }
 
-  return y + 4;
+  return y + 2;
 }
 
 // ── FOOTER HALAMAN BIASA (hanya nomor halaman) ───────────────────────────────
@@ -1190,7 +1190,7 @@ async function drawFooter(doc, surat, qrDataUrl, pageNum, totalPages) {
   const qrSz    = 55;
   const footerY = PH - 75;
   const verifikasiTxt =
-    'Dokumen ini ditandatangani dan distempel secara elektronik melalui Aplikasi Repositori Informasi Surat dan Administrasi Pesantren (RISALAT) Yayasan Pondok Pesantren Sukamiskin' +
+    'Dokumen ini ditandatangani dan distempel secara elektronik melalui Aplikasi Repositori Informasi Surat dan Administrasi Pesantren Sukamiskin (RISALATIN) MA YPP Sukamiskin' +
     ', untuk verifikasi surat scan atau klik QRCode.';
 
   // QR kiri bawah

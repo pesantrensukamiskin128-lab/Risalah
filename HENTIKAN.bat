@@ -1,10 +1,10 @@
 @echo off
-title RISALAT - Menghentikan Server
+title RISALATIN - Menghentikan Server
 color 0C
 
 echo.
 echo  ============================================
-echo    RISALAT - Menghentikan Server
+echo    RISALATIN - Menghentikan Server
 echo  ============================================
 echo.
 
