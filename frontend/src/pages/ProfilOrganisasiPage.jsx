@@ -80,7 +80,7 @@ export default function ProfilOrganisasiPage() {
 
   const currentLogo = logoPreview || (profil?.logoPath ? getUploadUrl(profil.logoPath) : null)
   // Preview nomor surat — singkatan dan PP.06 statis
-  const previewNomor = `001/A/MA-YPPS/PP.06/V/${new Date().getFullYear()}`
+  const previewNomor = `001/A/YPPS/PP.06/V/${new Date().getFullYear()}`
 
   return (
     <div className="space-y-5 max-w-2xl">
@@ -172,7 +172,7 @@ export default function ProfilOrganisasiPage() {
             <p className="text-xs text-gray-500 mb-1">Preview format nomor surat:</p>
             <p className="font-mono text-sm font-semibold text-primary-700">{previewNomor}</p>
             <p className="text-xs text-gray-400 mt-1">
-              Urutan / Jenis / <strong>MA-YPPS</strong> / PP.06 / Bulan-Romawi / Tahun
+              Urutan / Jenis / <strong>YPPS</strong> / PP.06 / Bulan-Romawi / Tahun
             </p>
           </div>
         </div>

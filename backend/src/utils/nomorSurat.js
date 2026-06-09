@@ -51,7 +51,7 @@ async function generateNomorSurat(jenisSurat = 'A') {
   const urutan = String(count + 1).padStart(3, '0');
 
   // Singkatan organisasi — statis sesuai ketentuan
-  const singkatan = 'MA-YPPS';
+  const singkatan = 'YPPS';
 
   return `${urutan}/${jenisSurat}/${singkatan}/${KODE_KLASIFIKASI}/${BULAN_ROMAWI[bulan - 1]}/${tahun}`;
 }
