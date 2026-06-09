@@ -3,12 +3,16 @@ node_modules/
 
 # Environment variables
 .env
+.env.production
 
 # Frontend build output (di-generate saat deploy)
 # public/
 
 # Uploads (file yang diupload user, jangan ikut ke repo)
 uploads/*/
+
+# PDF yang di-generate
+uploads/pdf/
 
 # Logs
 *.log
@@ -21,3 +25,6 @@ Thumbs.db
 # Editor
 .vscode/
 .idea/
+
+# Test files
+test-*.pdf
