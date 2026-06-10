@@ -12,8 +12,9 @@ const { v4: uuidv4 } = require('uuid');
 // ── Connection Pool ────────────────────────────────────────────────────────
 function parseDbUrl(url) {
   const u = new URL(url);
+  const host = u.hostname === 'localhost' ? '127.0.0.1' : u.hostname; // force IPv4
   return {
-    host:     u.hostname,
+    host,
     port:     parseInt(u.port) || 3306,
     user:     decodeURIComponent(u.username),
     password: decodeURIComponent(u.password),
