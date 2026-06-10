@@ -136,9 +136,18 @@ function serializeRow(row) {
   if (!row) return row;
   const out = {};
   for (const [k, v] of Object.entries(row)) {
-    if (v instanceof Date) out[k] = v;
-    else if (v !== null && typeof v === 'object' && v.constructor && v.constructor.name === 'Date') out[k] = new Date(v);
-    else out[k] = v;
+    if (v === null || v === undefined) {
+      out[k] = v;
+    } else if (Buffer.isBuffer(v)) {
+      // mysql2 kadang return TINYINT(1) / BIT sebagai Buffer
+      out[k] = v.length === 1 ? v[0] === 1 : v.toString();
+    } else if (v instanceof Date) {
+      out[k] = v;
+    } else if (typeof v === 'object' && v.constructor && v.constructor.name === 'Date') {
+      out[k] = new Date(v);
+    } else {
+      out[k] = v;
+    }
   }
   return out;
 }

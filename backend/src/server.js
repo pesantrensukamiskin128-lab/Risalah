@@ -124,20 +124,23 @@ app.get('/api/setup/columns-check', async (req, res) => {
     const conn = await mysql.createConnection(cfg);
     const [cols] = await conn.execute(`SHOW COLUMNS FROM \`${table}\``);
     const [rows] = await conn.execute(`SELECT * FROM \`${table}\` LIMIT 3`);
+    // Test prisma client juga
+    const prisma = require('./config/prisma');
+    const prismaRow = await prisma[table === 'agenda' ? 'agenda' : table].findFirst();
     await conn.end();
     res.json({
       success: true,
       columns: cols.map(c => c.Field),
-      sampleKeys: rows.length ? Object.keys(rows[0]) : [],
-      // Tampilkan nilai aktual (sensor kolom sensitif)
-      sampleData: rows.map(r => {
-        const safe = {};
-        for (const [k, v] of Object.entries(r)) {
-          if (['password','token'].some(s => k.toLowerCase().includes(s))) safe[k] = '***';
-          else safe[k] = v;
-        }
-        return safe;
+      // Nilai raw dari mysql2 langsung
+      rawData: rows.map(r => {
+        const out = {};
+        for (const [k, v] of Object.entries(r)) out[k] = (v === null ? null : String(v).substring(0, 40));
+        return out;
       }),
+      // Nilai dari prisma wrapper
+      prismaData: prismaRow ? Object.fromEntries(
+        Object.entries(prismaRow).map(([k, v]) => [k, v === null ? null : String(v).substring(0, 40)])
+      ) : null,
     });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
