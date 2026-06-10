@@ -123,9 +123,22 @@ app.get('/api/setup/columns-check', async (req, res) => {
     const cfg = parseDbUrl(process.env.DATABASE_URL);
     const conn = await mysql.createConnection(cfg);
     const [cols] = await conn.execute(`SHOW COLUMNS FROM \`${table}\``);
-    const [row]  = await conn.execute(`SELECT * FROM \`${table}\` LIMIT 1`);
+    const [rows] = await conn.execute(`SELECT * FROM \`${table}\` LIMIT 3`);
     await conn.end();
-    res.json({ success: true, columns: cols.map(c => c.Field), sampleKeys: row.length ? Object.keys(row[0]) : [] });
+    res.json({
+      success: true,
+      columns: cols.map(c => c.Field),
+      sampleKeys: rows.length ? Object.keys(rows[0]) : [],
+      // Tampilkan nilai aktual (sensor kolom sensitif)
+      sampleData: rows.map(r => {
+        const safe = {};
+        for (const [k, v] of Object.entries(r)) {
+          if (['password','token'].some(s => k.toLowerCase().includes(s))) safe[k] = '***';
+          else safe[k] = v;
+        }
+        return safe;
+      }),
+    });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
