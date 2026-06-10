@@ -183,10 +183,20 @@ async function resolveIncludes(rows, include, modelName) {
       const ids = [...new Set(arr.map(r => r[fk]).filter(Boolean))];
       if (ids.length === 0) { arr.forEach(r => r[rel] = null); continue; }
 
-      const selCols = nestedSelect ? Object.keys(nestedSelect).filter(k => nestedSelect[k]).map(k => `\`${k}\``).join(', ') : '*';
-      const relRows = await query(`SELECT ${selCols} FROM \`${table}\` WHERE \`${pk}\` IN (${ids.map(() => '?').join(',')})`, ids);
+      // Selalu fetch semua kolom, lalu filter berdasarkan select
+      const relRows = await query(`SELECT * FROM \`${table}\` WHERE \`${pk}\` IN (${ids.map(() => '?').join(',')})`, ids);
       const map = {};
-      relRows.forEach(r => map[r[pk]] = serializeRow(r));
+      relRows.forEach(r => {
+        let row = serializeRow(r);
+        // Terapkan select jika ada
+        if (nestedSelect) {
+          const selKeys = Object.keys(nestedSelect).filter(k => nestedSelect[k]);
+          const filtered = {};
+          selKeys.forEach(k => filtered[k] = row[k]);
+          row = filtered;
+        }
+        map[r[pk]] = row;
+      });
       arr.forEach(r => r[rel] = r[fk] ? (map[r[fk]] || null) : null);
 
     } else if (type === 'hasMany') {
@@ -204,7 +214,8 @@ async function resolveIncludes(rows, include, modelName) {
       if (nestedInclude) {
         relRows = await resolveIncludes(relRows, nestedInclude, relConfig.model);
       }
-      if (nestedSelect) {
+      // Terapkan select SETELAH resolve nested includes agar FK tidak hilang
+      if (nestedSelect && !nestedInclude) {
         const selKeys = Object.keys(nestedSelect).filter(k => nestedSelect[k]);
         relRows = relRows.map(r => { const o = {}; selKeys.forEach(k => o[k] = r[k]); return o; });
       }
