@@ -125,8 +125,20 @@ app.get('/api/setup/columns-check', async (req, res) => {
     const [cols] = await conn.execute(`SHOW COLUMNS FROM \`${table}\``);
     const [rows] = await conn.execute(`SELECT * FROM \`${table}\` LIMIT 3`);
     // Test prisma client juga
-    const prisma = require('./config/prisma');
-    const prismaRow = await prisma[table === 'agenda' ? 'agenda' : table].findFirst();
+    const prismaClient = require('./config/prisma');
+    // Map table name ke model name
+    const tableToModel = {
+      'agenda': 'agenda', 'disposisi': 'disposisi', 'kehadiran': 'kehadiran',
+      'notifikasi': 'notifikasi', 'organisasiprofil': 'organisasiProfil',
+      'penerimainternal': 'penerimaInternal', 'pesertaagenda': 'pesertaAgenda',
+      'pushsubscription': 'pushSubscription', 'suratkeluar': 'suratKeluar',
+      'suratmasuk': 'suratMasuk', 'templatesurat': 'templateSurat', 'user': 'user',
+    };
+    const modelName = tableToModel[table] || table;
+    let prismaRow = null;
+    try {
+      prismaRow = prismaClient[modelName] ? await prismaClient[modelName].findFirst() : null;
+    } catch(e) { prismaRow = { error: e.message }; }
     await conn.end();
     res.json({
       success: true,
