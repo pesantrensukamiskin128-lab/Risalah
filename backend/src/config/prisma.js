@@ -349,8 +349,19 @@ function createModel(modelName) {
       const id = data.id || uuidv4();
       const now = new Date();
 
+      // Auto-generate UUID untuk kolom yang punya @default(uuid()) di schema
+      const UUID_DEFAULT_COLS = {
+        agenda:      ['qrToken'],
+        suratKeluar: [], // qrCodeToken di-generate manual saat TTD
+      };
+      const uuidCols = UUID_DEFAULT_COLS[modelName] || [];
+
       // Filter out nested create/relation fields
       const flat = { id, ...data };
+      // Auto-fill kolom UUID yang tidak disuplai
+      for (const col of uuidCols) {
+        if (!flat[col]) flat[col] = uuidv4();
+      }
       if (!flat.createdAt) flat.createdAt = now;
       if ('updatedAt' in flat || Object.keys(TABLE_MAP).includes(modelName)) flat.updatedAt = now;
 

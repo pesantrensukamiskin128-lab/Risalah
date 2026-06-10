@@ -147,6 +147,44 @@ app.get('/api/setup/columns-check', async (req, res) => {
   }
 });
 
+// Fix qrToken kosong pada agenda + qrCodeToken pada surat
+app.post('/api/setup/fix-qrtoken', async (req, res) => {
+  const secret = req.headers['x-setup-secret'] || req.query.secret;
+  if (!process.env.SETUP_SECRET || secret !== process.env.SETUP_SECRET) {
+    return res.status(403).json({ success: false, message: 'Akses ditolak' });
+  }
+  try {
+    const mysql2 = require('mysql2/promise');
+    const { v4: uuidv4 } = require('uuid');
+    function parseDbUrl(url) {
+      const u = new URL(url);
+      return { host: u.hostname === 'localhost' ? '127.0.0.1' : u.hostname, port: parseInt(u.port)||3306, user: decodeURIComponent(u.username), password: decodeURIComponent(u.password), database: u.pathname.replace(/^\//,'') };
+    }
+    const conn = await mysql2.createConnection(parseDbUrl(process.env.DATABASE_URL));
+
+    // Fix agenda: qrToken kosong
+    const [agendas] = await conn.execute("SELECT id FROM `agenda` WHERE `qrToken` = '' OR `qrToken` IS NULL");
+    let fixedAgenda = 0;
+    for (const a of agendas) {
+      await conn.execute("UPDATE `agenda` SET `qrToken` = ? WHERE `id` = ?", [uuidv4(), a.id]);
+      fixedAgenda++;
+    }
+
+    // Fix suratkeluar: qrCodeToken kosong pada surat SELESAI
+    const [surats] = await conn.execute("SELECT id FROM `suratkeluar` WHERE status = 'SELESAI' AND (`qrCodeToken` = '' OR `qrCodeToken` IS NULL)");
+    let fixedSurat = 0;
+    for (const s of surats) {
+      await conn.execute("UPDATE `suratkeluar` SET `qrCodeToken` = ? WHERE `id` = ?", [uuidv4(), s.id]);
+      fixedSurat++;
+    }
+
+    await conn.end();
+    res.json({ success: true, message: `Fixed: ${fixedAgenda} agenda qrToken, ${fixedSurat} surat qrCodeToken` });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 // Endpoint debug path logo — hapus setelah masalah teratasi
 app.get('/api/setup/logo-check', async (req, res) => {
   const secret = req.query.secret;
