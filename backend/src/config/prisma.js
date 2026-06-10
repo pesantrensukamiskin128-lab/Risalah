@@ -44,7 +44,11 @@ async function query(sql, params = []) {
   return rows;
 }
 
-// ── Table name mapping (model → table) ────────────────────────────────────
+// ── Tabel yang punya kolom updatedAt ─────────────────────────────────────
+const HAS_UPDATED_AT = new Set([
+  'agenda', 'disposisi', 'organisasiprofil', 'suratkeluar',
+  'suratmasuk', 'templatesurat', 'user',
+]);
 // MySQL di Linux Hostinger: nama tabel lowercase (case-sensitive)
 const TABLE_MAP = {
   user:             'user',
@@ -363,7 +367,7 @@ function createModel(modelName) {
         if (!flat[col]) flat[col] = uuidv4();
       }
       if (!flat.createdAt) flat.createdAt = now;
-      if ('updatedAt' in flat || Object.keys(TABLE_MAP).includes(modelName)) flat.updatedAt = now;
+      if (HAS_UPDATED_AT.has(table)) flat.updatedAt = now;
 
       const cols = [];
       const vals = [];
@@ -398,7 +402,8 @@ function createModel(modelName) {
     // ── update ────────────────────────────────────────────────────────────
     async update({ where, data, select, include } = {}) {
       const now = new Date();
-      const flat = { ...data, updatedAt: now };
+      const flat = { ...data };
+      if (HAS_UPDATED_AT.has(table)) flat.updatedAt = now;
 
       const setCols = [];
       const setVals = [];
@@ -420,7 +425,8 @@ function createModel(modelName) {
     // ── updateMany ────────────────────────────────────────────────────────
     async updateMany({ where, data } = {}) {
       const now = new Date();
-      const flat = { ...data, updatedAt: now };
+      const flat = { ...data };
+      if (HAS_UPDATED_AT.has(table)) flat.updatedAt = now;
 
       const setCols = [];
       const setVals = [];
