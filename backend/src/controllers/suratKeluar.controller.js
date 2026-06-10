@@ -107,12 +107,19 @@ const createSurat = async (req, res) => {
         kepalaId:       kepalaId    || null,
         pembuatId:      req.user.id,
         penerimaEksternal: penerimaEksternal || null,
-        penerimaInternal: penerimaInternalIds?.length
-          ? { create: penerimaInternalIds.map(uid => ({ userId: uid })) }
-          : undefined,
       },
       include: suratInclude,
     });
+
+    // Buat penerima internal secara terpisah (hindari nested create)
+    if (penerimaInternalIds?.length) {
+      for (const uid of penerimaInternalIds) {
+        await prisma.penerimaInternal.create({ data: { suratId: surat.id, userId: uid } });
+      }
+      // Fetch ulang dengan penerima internal
+      const suratWithPI = await prisma.suratKeluar.findUnique({ where: { id: surat.id }, include: suratInclude });
+      return res.status(201).json({ success: true, message: isDraft ? 'Draft disimpan' : 'Surat dikirim ke Tata Usaha', data: suratWithPI });
+    }
 
     res.status(201).json({ success: true, message: isDraft ? 'Draft disimpan' : 'Surat dikirim ke Tata Usaha', data: surat });
   } catch (err) {
@@ -165,14 +172,20 @@ const updateSurat = async (req, res) => {
         ttdKepala:       false,
         tglParafTataUsaha: null,
         tglTtdKepala:    null,
-        penerimaInternal: penerimaInternalIds?.length
-          ? { create: penerimaInternalIds.map(uid => ({ userId: uid })) }
-          : undefined,
       },
       include: suratInclude,
     });
 
-    res.json({ success: true, message: isDraft ? 'Draft diperbarui' : 'Surat dikirim ke Tata Usaha', data: updated });
+    // Buat penerima internal secara terpisah (hindari nested create)
+    if (penerimaInternalIds?.length) {
+      for (const uid of penerimaInternalIds) {
+        await prisma.penerimaInternal.create({ data: { suratId: id, userId: uid } });
+      }
+    }
+
+    // Fetch ulang dengan penerima internal terbaru
+    const updatedWithPI = await prisma.suratKeluar.findUnique({ where: { id }, include: suratInclude });
+    res.json({ success: true, message: isDraft ? 'Draft diperbarui' : 'Surat dikirim ke Tata Usaha', data: updatedWithPI });
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: 'Terjadi kesalahan' });

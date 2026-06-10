@@ -101,14 +101,19 @@ const createAgenda = async (req, res) => {
         zonaWaktu: zonaWaktu || 'WIB',
         deskripsi: deskripsi || null,
         pembuatId: req.user.id,
-        peserta: pesertaIds?.length
-          ? { create: pesertaIds.map(uid => ({ userId: uid })) }
-          : undefined,
       },
       include: agendaInclude,
     });
 
-    res.status(201).json({ success: true, message: 'Agenda berhasil dibuat', data: agenda });
+    // Buat peserta secara terpisah
+    if (pesertaIds?.length) {
+      for (const uid of pesertaIds) {
+        await prisma.pesertaAgenda.create({ data: { agendaId: agenda.id, userId: uid } });
+      }
+    }
+
+    const agendaWithPeserta = await prisma.agenda.findUnique({ where: { id: agenda.id }, include: agendaInclude });
+    res.status(201).json({ success: true, message: 'Agenda berhasil dibuat', data: agendaWithPeserta });
 
     // Notifikasi ke peserta
     if (pesertaIds?.length) {
@@ -157,14 +162,19 @@ const updateAgenda = async (req, res) => {
         waktuSelesai:  waktuSelesai  ?? existing.waktuSelesai,
         zonaWaktu:     zonaWaktu     ?? existing.zonaWaktu,
         deskripsi:     deskripsi     !== undefined ? deskripsi : existing.deskripsi,
-        peserta: pesertaIds?.length
-          ? { create: pesertaIds.map(uid => ({ userId: uid })) }
-          : undefined,
       },
       include: agendaInclude,
     });
 
-    res.json({ success: true, message: 'Agenda berhasil diperbarui', data: updated });
+    // Buat peserta baru secara terpisah
+    if (pesertaIds?.length) {
+      for (const uid of pesertaIds) {
+        await prisma.pesertaAgenda.create({ data: { agendaId: id, userId: uid } });
+      }
+    }
+
+    const updatedWithPeserta = await prisma.agenda.findUnique({ where: { id }, include: agendaInclude });
+    res.json({ success: true, message: 'Agenda berhasil diperbarui', data: updatedWithPeserta });
 
     // Kirim notifikasi ke peserta baru (yang belum ada sebelumnya)
     if (pesertaIds?.length) {
