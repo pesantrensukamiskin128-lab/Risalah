@@ -86,7 +86,6 @@ app.get('/api/setup/db-check', async (req, res) => {
   }
   const prisma = require('./config/prisma');
   try {
-    // Test query sederhana
     const result = await prisma.$queryRaw`SELECT 1 as ping`;
     const tables = await prisma.$queryRaw`SHOW TABLES`;
     const userCount = await prisma.user.count();
@@ -105,6 +104,30 @@ app.get('/api/setup/db-check', async (req, res) => {
       code: err.code,
       meta: err.meta,
     });
+  }
+});
+
+// Endpoint debug kolom tabel
+app.get('/api/setup/columns-check', async (req, res) => {
+  const secret = req.query.secret;
+  if (!process.env.SETUP_SECRET || secret !== process.env.SETUP_SECRET) {
+    return res.status(403).json({ success: false, message: 'Akses ditolak' });
+  }
+  const table = req.query.table || 'agenda';
+  try {
+    const mysql = require('mysql2/promise');
+    function parseDbUrl(url) {
+      const u = new URL(url);
+      return { host: u.hostname === 'localhost' ? '127.0.0.1' : u.hostname, port: parseInt(u.port)||3306, user: decodeURIComponent(u.username), password: decodeURIComponent(u.password), database: u.pathname.replace(/^\//,'') };
+    }
+    const cfg = parseDbUrl(process.env.DATABASE_URL);
+    const conn = await mysql.createConnection(cfg);
+    const [cols] = await conn.execute(`SHOW COLUMNS FROM \`${table}\``);
+    const [row]  = await conn.execute(`SELECT * FROM \`${table}\` LIMIT 1`);
+    await conn.end();
+    res.json({ success: true, columns: cols.map(c => c.Field), sampleKeys: row.length ? Object.keys(row[0]) : [] });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
   }
 });
 
