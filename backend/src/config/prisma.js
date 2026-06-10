@@ -45,19 +45,20 @@ async function query(sql, params = []) {
 }
 
 // ── Table name mapping (model → table) ────────────────────────────────────
+// MySQL di Linux Hostinger: nama tabel lowercase (case-sensitive)
 const TABLE_MAP = {
-  user:             'User',
-  suratKeluar:      'SuratKeluar',
-  suratMasuk:       'SuratMasuk',
-  organisasiProfil: 'OrganisasiProfil',
-  disposisi:        'Disposisi',
-  notifikasi:       'Notifikasi',
-  agenda:           'Agenda',
-  kehadiran:        'Kehadiran',
-  pesertaAgenda:    'PesertaAgenda',
-  penerimaInternal: 'PenerimaInternal',
-  pushSubscription: 'PushSubscription',
-  templateSurat:    'TemplateSurat',
+  user:             'user',
+  suratKeluar:      'suratkeluar',
+  suratMasuk:       'suratmasuk',
+  organisasiProfil: 'organisasiprofil',
+  disposisi:        'disposisi',
+  notifikasi:       'notifikasi',
+  agenda:           'agenda',
+  kehadiran:        'kehadiran',
+  pesertaAgenda:    'pesertaagenda',
+  penerimaInternal: 'penerimainternal',
+  pushSubscription: 'pushsubscription',
+  templateSurat:    'templatesurat',
 };
 
 // ── WHERE builder ──────────────────────────────────────────────────────────
@@ -229,43 +230,43 @@ async function resolveIncludes(rows, include, modelName) {
 function getRelationConfig(modelName, relName) {
   const configs = {
     suratKeluar: {
-      pembuat:          { type: 'belongsTo', table: 'User', pk: 'id', fk: 'pembuatId',    model: 'user' },
-      tataUsaha:        { type: 'belongsTo', table: 'User', pk: 'id', fk: 'tataUsahaId',  model: 'user' },
-      kepala:           { type: 'belongsTo', table: 'User', pk: 'id', fk: 'kepalaId',     model: 'user' },
-      penerimaInternal: { type: 'hasMany',   table: 'PenerimaInternal', pk: 'id', fk: 'suratId', model: 'penerimaInternal' },
+      pembuat:          { type: 'belongsTo', table: 'user',            pk: 'id', fk: 'pembuatId',    model: 'user' },
+      tataUsaha:        { type: 'belongsTo', table: 'user',            pk: 'id', fk: 'tataUsahaId',  model: 'user' },
+      kepala:           { type: 'belongsTo', table: 'user',            pk: 'id', fk: 'kepalaId',     model: 'user' },
+      penerimaInternal: { type: 'hasMany',   table: 'penerimainternal', pk: 'id', fk: 'suratId',     model: 'penerimaInternal' },
     },
     suratMasuk: {
-      uploader:  { type: 'belongsTo', table: 'User',      pk: 'id',        fk: 'uploaderId',   model: 'user' },
-      disposisi: { type: 'hasMany',   table: 'Disposisi', pk: 'id',        fk: 'suratMasukId', model: 'disposisi' },
+      uploader:  { type: 'belongsTo', table: 'user',      pk: 'id', fk: 'uploaderId',   model: 'user' },
+      disposisi: { type: 'hasMany',   table: 'disposisi', pk: 'id', fk: 'suratMasukId', model: 'disposisi' },
     },
     disposisi: {
-      dibuatOleh: { type: 'belongsTo', table: 'User',      pk: 'id', fk: 'dibuatOlehId', model: 'user' },
-      penerima:   { type: 'belongsTo', table: 'User',      pk: 'id', fk: 'penerimaId',   model: 'user' },
-      suratMasuk: { type: 'belongsTo', table: 'SuratMasuk', pk: 'id', fk: 'suratMasukId', model: 'suratMasuk' },
+      dibuatOleh: { type: 'belongsTo', table: 'user',      pk: 'id', fk: 'dibuatOlehId', model: 'user' },
+      penerima:   { type: 'belongsTo', table: 'user',      pk: 'id', fk: 'penerimaId',   model: 'user' },
+      suratMasuk: { type: 'belongsTo', table: 'suratmasuk', pk: 'id', fk: 'suratMasukId', model: 'suratMasuk' },
     },
     penerimaInternal: {
-      user:  { type: 'belongsTo', table: 'User',      pk: 'id', fk: 'userId',  model: 'user' },
-      surat: { type: 'belongsTo', table: 'SuratKeluar', pk: 'id', fk: 'suratId', model: 'suratKeluar' },
+      user:  { type: 'belongsTo', table: 'user',       pk: 'id', fk: 'userId',  model: 'user' },
+      surat: { type: 'belongsTo', table: 'suratkeluar', pk: 'id', fk: 'suratId', model: 'suratKeluar' },
     },
     agenda: {
-      pembuat:   { type: 'belongsTo', table: 'User',          pk: 'id', fk: 'pembuatId', model: 'user' },
-      peserta:   { type: 'hasMany',   table: 'PesertaAgenda', pk: 'id', fk: 'agendaId',  model: 'pesertaAgenda' },
-      kehadiran: { type: 'hasMany',   table: 'Kehadiran',     pk: 'id', fk: 'agendaId',  model: 'kehadiran' },
+      pembuat:   { type: 'belongsTo', table: 'user',          pk: 'id', fk: 'pembuatId', model: 'user' },
+      peserta:   { type: 'hasMany',   table: 'pesertaagenda', pk: 'id', fk: 'agendaId',  model: 'pesertaAgenda' },
+      kehadiran: { type: 'hasMany',   table: 'kehadiran',     pk: 'id', fk: 'agendaId',  model: 'kehadiran' },
       _count:    { type: 'count' },
     },
     pesertaAgenda: {
-      user:   { type: 'belongsTo', table: 'User',   pk: 'id', fk: 'userId',   model: 'user' },
-      agenda: { type: 'belongsTo', table: 'Agenda', pk: 'id', fk: 'agendaId', model: 'agenda' },
+      user:   { type: 'belongsTo', table: 'user',   pk: 'id', fk: 'userId',   model: 'user' },
+      agenda: { type: 'belongsTo', table: 'agenda', pk: 'id', fk: 'agendaId', model: 'agenda' },
     },
     kehadiran: {
-      user:   { type: 'belongsTo', table: 'User',   pk: 'id', fk: 'userId',   model: 'user' },
-      agenda: { type: 'belongsTo', table: 'Agenda', pk: 'id', fk: 'agendaId', model: 'agenda' },
+      user:   { type: 'belongsTo', table: 'user',   pk: 'id', fk: 'userId',   model: 'user' },
+      agenda: { type: 'belongsTo', table: 'agenda', pk: 'id', fk: 'agendaId', model: 'agenda' },
     },
     notifikasi: {
-      user: { type: 'belongsTo', table: 'User', pk: 'id', fk: 'userId', model: 'user' },
+      user: { type: 'belongsTo', table: 'user', pk: 'id', fk: 'userId', model: 'user' },
     },
     pushSubscription: {
-      user: { type: 'belongsTo', table: 'User', pk: 'id', fk: 'userId', model: 'user' },
+      user: { type: 'belongsTo', table: 'user', pk: 'id', fk: 'userId', model: 'user' },
     },
   };
 
