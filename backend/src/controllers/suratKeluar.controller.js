@@ -152,43 +152,38 @@ const updateSurat = async (req, res) => {
       ? penerimaInternalIds.filter(Boolean)
       : [];
 
-    // Gunakan transaction agar deleteMany + update + create bersifat atomik
-    const updatedWithPI = await prisma.$transaction(async (tx) => {
-      await tx.penerimaInternal.deleteMany({ where: { suratId: id } });
+    // Hapus penerima internal lama, lalu update surat, lalu buat penerima baru
+    await prisma.penerimaInternal.deleteMany({ where: { suratId: id } });
 
-      await tx.suratKeluar.update({
-        where: { id },
-        data: {
-          jenisSurat:      jenisSurat      ?? existing.jenisSurat,
-          perihal:         perihal         ?? existing.perihal,
-          lampiran:        lampiran        !== undefined ? lampiran        : existing.lampiran,
-          isiSurat:        isiSurat        ?? existing.isiSurat,
-          lampiranIsi:     lampiranIsi     !== undefined ? lampiranIsi     : existing.lampiranIsi,
-          tujuanSurat:     tujuanSurat     !== undefined ? tujuanSurat     : existing.tujuanSurat,
-          tanggalMasehi:   tanggal,
-          tanggalHijriyah: hijriyahFormatted,
-          tempatTerbit:    tempatTerbit    ?? existing.tempatTerbit,
-          status:          isDraft ? 'DRAFT' : 'MENUNGGU_TATA_USAHA',
-          tataUsahaId:     tataUsahaId     !== undefined ? (tataUsahaId || null) : existing.tataUsahaId,
-          kepalaId:        kepalaId        !== undefined ? (kepalaId    || null) : existing.kepalaId,
-          penerimaEksternal: penerimaEksternal !== undefined ? (penerimaEksternal || null) : existing.penerimaEksternal,
-          catatanTolak:    isDraft ? existing.catatanTolak : null,
-          parafTataUsaha:  false,
-          ttdKepala:       false,
-          tglParafTataUsaha: null,
-          tglTtdKepala:    null,
-        },
-      });
-
-      if (internalIds.length > 0) {
-        await tx.penerimaInternal.createMany({
-          data: internalIds.map(uid => ({ suratId: id, userId: uid })),
-          skipDuplicates: true,
-        });
-      }
-
-      return tx.suratKeluar.findUnique({ where: { id }, include: suratInclude });
+    await prisma.suratKeluar.update({
+      where: { id },
+      data: {
+        jenisSurat:        jenisSurat      ?? existing.jenisSurat,
+        perihal:           perihal         ?? existing.perihal,
+        lampiran:          lampiran        !== undefined ? lampiran        : existing.lampiran,
+        isiSurat:          isiSurat        ?? existing.isiSurat,
+        lampiranIsi:       lampiranIsi     !== undefined ? lampiranIsi     : existing.lampiranIsi,
+        tujuanSurat:       tujuanSurat     !== undefined ? tujuanSurat     : existing.tujuanSurat,
+        tanggalMasehi:     tanggal,
+        tanggalHijriyah:   hijriyahFormatted,
+        tempatTerbit:      tempatTerbit    ?? existing.tempatTerbit,
+        status:            isDraft ? 'DRAFT' : 'MENUNGGU_TATA_USAHA',
+        tataUsahaId:       tataUsahaId     !== undefined ? (tataUsahaId || null) : existing.tataUsahaId,
+        kepalaId:          kepalaId        !== undefined ? (kepalaId    || null) : existing.kepalaId,
+        penerimaEksternal: penerimaEksternal !== undefined ? (penerimaEksternal || null) : existing.penerimaEksternal,
+        catatanTolak:      isDraft ? existing.catatanTolak : null,
+        parafTataUsaha:    false,
+        ttdKepala:         false,
+        tglParafTataUsaha: null,
+        tglTtdKepala:      null,
+      },
     });
+
+    for (const uid of internalIds) {
+      await prisma.penerimaInternal.create({ data: { suratId: id, userId: uid } });
+    }
+
+    const updatedWithPI = await prisma.suratKeluar.findUnique({ where: { id }, include: suratInclude });
 
     res.json({ success: true, message: isDraft ? 'Draft diperbarui' : 'Surat dikirim ke Tata Usaha', data: updatedWithPI });
   } catch (err) {
