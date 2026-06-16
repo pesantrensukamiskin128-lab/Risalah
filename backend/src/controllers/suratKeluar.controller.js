@@ -91,24 +91,29 @@ const createSurat = async (req, res) => {
     const tanggal = new Date(tanggalMasehi);
     const hijriyahFormatted = tanggalHijriyah || toHijriyah(tanggal).formatted;
 
+    // Normalisasi penerimaInternalIds — bisa berupa array atau undefined/null
+    const internalIds = Array.isArray(penerimaInternalIds)
+      ? penerimaInternalIds.filter(Boolean)
+      : [];
+
     const surat = await prisma.suratKeluar.create({
       data: {
         jenisSurat,
         perihal,
-        lampiran:       lampiran   || null,
+        lampiran:         lampiran    || null,
         isiSurat,
-        lampiranIsi:    lampiranIsi || null,
-        tujuanSurat:    tujuanSurat || null,
+        lampiranIsi:      lampiranIsi || null,
+        tujuanSurat:      tujuanSurat || null,
         tanggalMasehi:    tanggal,
         tanggalHijriyah:  hijriyahFormatted,
-        tempatTerbit:   tempatTerbit || 'Bandung',
-        status:         isDraft ? 'DRAFT' : 'MENUNGGU_TATA_USAHA',
-        tataUsahaId:    tataUsahaId || null,
-        kepalaId:       kepalaId    || null,
-        pembuatId:      req.user.id,
+        tempatTerbit:     tempatTerbit || 'Bandung',
+        status:           isDraft ? 'DRAFT' : 'MENUNGGU_TATA_USAHA',
+        tataUsahaId:      tataUsahaId || null,
+        kepalaId:         kepalaId    || null,
+        pembuatId:        req.user.id,
         penerimaEksternal: penerimaEksternal || null,
-        penerimaInternal: penerimaInternalIds?.length
-          ? { create: penerimaInternalIds.map(uid => ({ userId: uid })) }
+        penerimaInternal: internalIds.length
+          ? { create: internalIds.map(uid => ({ userId: uid })) }
           : undefined,
       },
       include: suratInclude,
@@ -140,49 +145,55 @@ const updateSurat = async (req, res) => {
     } = req.body;
 
     const tanggal  = tanggalMasehi ? new Date(tanggalMasehi) : existing.tanggalMasehi;
-    // Pakai nilai hijriyah dari frontend jika dikirim, fallback ke kalkulasi
     const hijriyahFormatted = tanggalHijriyah || toHijriyah(tanggal).formatted;
 
-    await prisma.penerimaInternal.deleteMany({ where: { suratId: id } });
+    // Normalisasi penerimaInternalIds — bisa berupa array atau undefined
+    const internalIds = Array.isArray(penerimaInternalIds)
+      ? penerimaInternalIds.filter(Boolean)
+      : [];
 
-    const updated = await prisma.suratKeluar.update({
-      where: { id },
-      data: {
-        jenisSurat:      jenisSurat      ?? existing.jenisSurat,
-        perihal:         perihal         ?? existing.perihal,
-        lampiran:        lampiran        !== undefined ? lampiran        : existing.lampiran,
-        isiSurat:        isiSurat        ?? existing.isiSurat,
-        lampiranIsi:     lampiranIsi     !== undefined ? lampiranIsi     : existing.lampiranIsi,
-        tujuanSurat:     tujuanSurat     !== undefined ? tujuanSurat     : existing.tujuanSurat,
-        tanggalMasehi:   tanggal,
-        tanggalHijriyah: hijriyahFormatted,
-        tempatTerbit:    tempatTerbit    ?? existing.tempatTerbit,
-        status:          isDraft ? 'DRAFT' : 'MENUNGGU_TATA_USAHA',
-        tataUsahaId:     tataUsahaId     !== undefined ? tataUsahaId     : existing.tataUsahaId,
-        kepalaId:        kepalaId        !== undefined ? kepalaId        : existing.kepalaId,
-        penerimaEksternal: penerimaEksternal !== undefined ? penerimaEksternal : existing.penerimaEksternal,
-        catatanTolak:    isDraft ? existing.catatanTolak : null,
-        parafTataUsaha:  false,
-        ttdKepala:       false,
-        tglParafTataUsaha: null,
-        tglTtdKepala:    null,
-      },
-      include: suratInclude,
+    // Gunakan transaction agar deleteMany + update + create bersifat atomik
+    const updatedWithPI = await prisma.$transaction(async (tx) => {
+      await tx.penerimaInternal.deleteMany({ where: { suratId: id } });
+
+      await tx.suratKeluar.update({
+        where: { id },
+        data: {
+          jenisSurat:      jenisSurat      ?? existing.jenisSurat,
+          perihal:         perihal         ?? existing.perihal,
+          lampiran:        lampiran        !== undefined ? lampiran        : existing.lampiran,
+          isiSurat:        isiSurat        ?? existing.isiSurat,
+          lampiranIsi:     lampiranIsi     !== undefined ? lampiranIsi     : existing.lampiranIsi,
+          tujuanSurat:     tujuanSurat     !== undefined ? tujuanSurat     : existing.tujuanSurat,
+          tanggalMasehi:   tanggal,
+          tanggalHijriyah: hijriyahFormatted,
+          tempatTerbit:    tempatTerbit    ?? existing.tempatTerbit,
+          status:          isDraft ? 'DRAFT' : 'MENUNGGU_TATA_USAHA',
+          tataUsahaId:     tataUsahaId     !== undefined ? (tataUsahaId || null) : existing.tataUsahaId,
+          kepalaId:        kepalaId        !== undefined ? (kepalaId    || null) : existing.kepalaId,
+          penerimaEksternal: penerimaEksternal !== undefined ? (penerimaEksternal || null) : existing.penerimaEksternal,
+          catatanTolak:    isDraft ? existing.catatanTolak : null,
+          parafTataUsaha:  false,
+          ttdKepala:       false,
+          tglParafTataUsaha: null,
+          tglTtdKepala:    null,
+        },
+      });
+
+      if (internalIds.length > 0) {
+        await tx.penerimaInternal.createMany({
+          data: internalIds.map(uid => ({ suratId: id, userId: uid })),
+          skipDuplicates: true,
+        });
+      }
+
+      return tx.suratKeluar.findUnique({ where: { id }, include: suratInclude });
     });
 
-    // Buat penerima internal secara terpisah (hindari nested create)
-    if (penerimaInternalIds?.length) {
-      for (const uid of penerimaInternalIds) {
-        await prisma.penerimaInternal.create({ data: { suratId: id, userId: uid } });
-      }
-    }
-
-    // Fetch ulang dengan penerima internal terbaru
-    const updatedWithPI = await prisma.suratKeluar.findUnique({ where: { id }, include: suratInclude });
-    res.json({ success: true, message: isDraft ? 'Draft diperbarui' : 'Surat dikirim ke Sekretaris', data: updatedWithPI });
+    res.json({ success: true, message: isDraft ? 'Draft diperbarui' : 'Surat dikirim ke Tata Usaha', data: updatedWithPI });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ success: false, message: 'Terjadi kesalahan' });
+    res.status(500).json({ success: false, message: 'Terjadi kesalahan saat menyimpan surat' });
   }
 };
 
